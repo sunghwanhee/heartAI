@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마음AI - 치매 환자를 위한 AI 대화 서비스</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 95%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .icons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .setup-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        .message.ai .message-bubble {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .message.user .message-bubble {
+            background: #4caf50;
+            color: white;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .ai-avatar {
+            background: #2196f3;
+            color: white;
+        }
+
+        .user-avatar {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status {
+            padding: 15px 20px;
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            margin: 10px 20px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .controls {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .text-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .text-input:focus {
+            border-color: #2196f3;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #2196f3;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #1976d2;
+            transform: translateY(-2px);
+        }
+
+        .btn-voice {
+            background: #f44336;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 20px;
+        }
+
+        .btn-voice.recording {
+            background: #ff1744;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .emotion-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .emotion-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4caf50;
+        }
+
+        .emotion-indicator.warning {
+            background: #ff9800;
+        }
+
+        .emotion-indicator.danger {
+            background: #f44336;
+        }
+
+        .user-info {
+            background: #e8f5e8;
+            padding: 15px;
+            margin: 10px 20px;
+            border-radius: 10px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #2196f3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .settings-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- 초기 설정 모달 -->
+    <div class="setup-modal" id="setupModal">
+        <div class="modal-content">
+            <h2>환자 정보 입력</h2>
+            <form id="patientForm">
+                <div class="form-group">
+                    <label for="patientName">이름:</label>
+                    <input type="text" id="patientName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="patientAge">나이:</label>
+                    <input type="number" id="patientAge" min="1" max="120" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="patientGender">성별:</label>
+                    <select id="patientGender" required>
+                        <option value="">선택하세요</option>
+                        <option value="남성">남성</option>
+                        <option value="여성">여성</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="hometown">고향/출생지:</label>
+                    <input type="text" id="hometown" placeholder="예: 부산광역시">
+                </div>
+
+                <div class="form-group">
+                    <label for="job">과거 직업:</label>
+                    <input type="text" id="job" placeholder="예: 교사, 농부, 사업가">
+                </div>
+
+                <div class="form-group">
+                    <label for="family">가족 관계:</label>
+                    <textarea id="family" placeholder="예: 아들 김철수(45세), 며느리 이영희(42세), 손자 김민수(15세)"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="hobbies">취미/관심사:</label>
+                    <textarea id="hobbies" placeholder="예: 트로트 음악, 원예, 산책, 요리"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="memories">주요 기억/추억:</label>
+                    <textarea id="memories" placeholder="예: 부산에서 태어남, 교사로 30년 근무, 3남매 키움"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="condition">건강 상태:</label>
+                    <select id="condition">
+                        <option value="정상">정상</option>
+                        <option value="경도인지장애">경도인지장애</option>
+                        <option value="초기치매">초기치매</option>
+                        <option value="중등도치매">중등도치매</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">대화 시작하기</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header" style="position: relative;">
+            <button class="settings-btn" id="settingsBtn">설정</button>
+            <h1>
+                <div class="icons">
+                    <div class="icon">🧠</div>
+                    <div class="icon">💙</div>
+                    <div class="icon">💬</div>
+                </div>
+                마음AI
+            </h1>
+            <p>치매 환자를 위한 맞춤형 AI 대화 서비스</p>
+        </div>
+
+        <div class="user-info">
+            <strong>사용자:</strong> <span id="userName">-</span> | 
+            <strong>나이:</strong> <span id="userAge">-</span> | 
+            <strong>상태:</strong> <span id="userCondition">-</span>
+        </div>
+
+        <div class="status">
+            <div class="emotion-status">
+                <div class="emotion-indicator" id="emotionIndicator"></div>
+                <span id="emotionStatus">정서 상태: 대기 중</span>
+            </div>
+            <div>마지막 대화: <span id="lastChat">대화를 시작해보세요</span></div>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <!-- 대화가 여기에 표시됩니다 -->
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            AI가 응답을 생성중입니다...
+        </div>
+
+        <div class="controls">
+            <div class="input-group">
+                <input type="text" class="text-input" id="textInput" placeholder="메시지를 입력하세요..." disabled>
+                <button class="btn btn-primary" id="sendBtn" disabled>전송</button>
+                <button class="btn btn-voice" id="voiceBtn" title="음성으로 말하기" disabled>🎤</button>
+            </div>
+            <div style="text-align: center; font-size: 14px; color: #666;">
+                먼저 환자 정보를 입력해주세요. 음성 버튼을 눌러 말씀하시면 됩니다.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MaeumAI {
+            constructor() {
+                this.isRecording = false;
+                this.recognition = null;
+                this.synthesis = window.speechSynthesis;
+                this.isSetupComplete = false;
+                this.conversationHistory = [];
+                this.userProfile = {};
+                this.dangerKeywords = ["죽고싶다", "자살", "외로워", "아파", "도와줘", "무서워", "힘들어"];
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.setupSpeechRecognition();
+                this.showSetupModal();
+            }
+
+            setupEventListeners() {
+                document.getElementById('sendBtn').addEventListener('click', () => this.sendMessage());
+                document.getElementById('textInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
+                document.getElementById('voiceBtn').addEventListener('click', () => this.toggleVoiceRecording());
+                document.getElementById('patientForm').addEventListener('submit', (e) => this.handleFormSubmit(e));
+                document.getElementById('settingsBtn').addEventListener('click', () => this.showSetupModal());
+            }
+
+            showSetupModal() {
+                document.getElementById('setupModal').classList.remove('hidden');
+                if (this.userProfile.name) {
+                    // 기존 정보가 있으면 폼에 채워넣기
+                    document.getElementById('patientName').value = this.userProfile.name || '';
+                    document.getElementById('patientAge').value = this.userProfile.age || '';
+                    document.getElementById('patientGender').value = this.userProfile.gender || '';
+                    document.getElementById('hometown').value = this.userProfile.hometown || '';
+                    document.getElementById('job').value = this.userProfile.job || '';
+                    document.getElementById('family').value = this.userProfile.family || '';
+                    document.getElementById('hobbies').value = this.userProfile.hobbies || '';
+                    document.getElementById('memories').value = this.userProfile.memories || '';
+                    document.getElementById('condition').value = this.userProfile.condition || '';
+                }
+            }
+
+            handleFormSubmit(e) {
+                e.preventDefault();
+                
+                this.userProfile = {
+                    name: document.getElementById('patientName').value,
+                    age: parseInt(document.getElementById('patientAge').value),
+                    gender: document.getElementById('patientGender').value,
+                    hometown: document.getElementById('hometown').value,
+                    job: document.getElementById('job').value,
+                    family: document.getElementById('family').value,
+                    hobbies: document.getElementById('hobbies').value,
+                    memories: document.getElementById('memories').value,
+                    condition: document.getElementById('condition').value
+                };
+
+                this.updateUserInfo();
+                this.enableControls();
+                document.getElementById('setupModal').classList.add('hidden');
+                this.startConversation();
+            }
+
+            updateUserInfo() {
+                document.getElementById('userName').textContent = this.userProfile.name;
+                document.getElementById('userAge').textContent = this.userProfile.age + "세";
+                document.getElementById('userCondition').textContent = this.userProfile.condition;
+            }
+
+            enableControls() {
+                document.getElementById('textInput').disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+                document.getElementById('voiceBtn').disabled = false;
+                this.isSetupComplete = true;
+            }
+
+            startConversation() {
+                const greeting = this.generatePersonalizedGreeting();
+                this.addMessage(greeting, 'ai');
+                this.speakResponse(greeting);
+            }
+
+            generatePersonalizedGreeting() {
+                const greetings = [
+                    `안녕하세요, ${this.userProfile.name}님! 오늘도 건강하게 지내고 계신가요?`,
+                    `${this.userProfile.name}님, 반갑습니다! 오늘 기분은 어떠신지 궁금해요.`,
+                    `${this.userProfile.name}님, 안녕하세요! ${this.userProfile.hometown}은 어떤 곳인지 이야기해주실 수 있나요?`
+                ];
+                
+                if (this.userProfile.hobbies) {
+                    greetings.push(`${this.userProfile.name}님, 오늘도 ${this.userProfile.hobbies.split(',')[0]}에 관심이 있으신가요?`);
+                }
+                
+                return greetings[Math.floor(Math.random() * greetings.length)];
+            }
+
+            setupSpeechRecognition() {
+                if ('webkitSpeechRecognition' in window) {
+                    this.recognition = new webkitSpeechRecognition();
+                    this.recognition.lang = 'ko-KR';
+                    this.recognition.continuous = false;
+                    this.recognition.interimResults = false;
+
+                    this.recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        document.getElementById('textInput').value = transcript;
+                        this.sendMessage();
+                    };
+
+                    this.recognition.onerror = (event) => {
+                        console.error('음성 인식 오류:', event.error);
+                        this.stopRecording();
+                    };
+
+                    this.recognition.onend = () => {
+                        this.stopRecording();
+                    };
+                }
+            }
+
+            toggleVoiceRecording() {
+                if (!this.isSetupComplete) {
+                    alert('먼저 환자 정보를 입력해주세요.');
+                    return;
+                }
+
+                if (!this.recognition) {
+                    alert('이 브라우저에서는 음성 인식을 지원하지 않습니다.');
+                    return;
+                }
+
+                if (this.isRecording) {
+                    this.stopRecording();
+                } else {
+                    this.startRecording();
+                }
+            }
+
+            startRecording() {
+                this.isRecording = true;
+                const voiceBtn = document.getElementById('voiceBtn');
+                voiceBtn.classList.add('recording');
+                voiceBtn.textContent = '🛑';
+                this.recognition.start();
+            }
+
+            stopRecording() {
+                this.isRecording = false;
+                const voiceBtn = document.getElementById('voiceBtn');
+                voiceBtn.classList.remove('recording');
+                voiceBtn.textContent = '🎤';
+                if (this.recognition) {
+                    this.recognition.stop();
+                }
+            }
+
+            async sendMessage() {
+                if (!this.isSetupComplete) {
+                    alert('먼저 환자 정보를 입력해주세요.');
+                    return;
+                }
+
+                const input = document.getElementById('textInput');
+                const message = input.value.trim();
+                if (!message) return;
+
+                this.addMessage(message, 'user');
+                this.conversationHistory.push({type: 'user', message: message, timestamp: new Date()});
+                input.value = '';
+
+                // 위험 발화 감지
+                this.checkDangerousContent(message);
+
+                // 감정 분석
+                this.analyzeEmotion(message);
+
+                // AI 응답 생성
+                this.showLoading(true);
+                const response = await this.generateAIResponse(message);
+                this.showLoading(false);
+                
+                this.addMessage(response, 'ai');
+                this.conversationHistory.push({type: 'ai', message: response, timestamp: new Date()});
+                this.speakResponse(response);
+                
+                // 마지막 대화 시간 업데이트
+                document.getElementById('lastChat').textContent = new Date().toLocaleTimeString('ko-KR');
+            }
+
+            addMessage(text, type) {
+                const chatContainer = document.getElementById('chatContainer');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                
+                const avatar = document.createElement('div');
+                avatar.className = `avatar ${type}-avatar`;
+                avatar.textContent = type === 'ai' ? '🤖' : '👤';
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                bubble.textContent = text;
+                
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(bubble);
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            checkDangerousContent(message) {
+                const foundDanger = this.dangerKeywords.some(keyword => 
+                    message.toLowerCase().includes(keyword.toLowerCase())
+                );
+                
+                if (foundDanger) {
+                    this.updateEmotionStatus('위험', 'danger');
+                    setTimeout(() => {
+                        alert('⚠️ 위험 발화가 감지되었습니다. 보호자에게 즉시 알림이 전송됩니다.');
+                        console.log(`응급상황 알림 - 환자: ${this.userProfile.name}, 발화: "${message}", 시간: ${new Date()}`);
+                    }, 1000);
+                }
+            }
+
+            analyzeEmotion(message) {
+                const positiveKeywords = ['좋다', '행복', '기쁘다', '즐겁다', '고맙다', '감사', '웃음'];
+                const negativeKeywords = ['슬프다', '우울', '힘들다', '아프다', '외롭다', '걱정', '불안'];
+                
+                const hasPositive = positiveKeywords.some(keyword => message.includes(keyword));
+                const hasNegative = negativeKeywords.some(keyword => message.includes(keyword));
+                
+                if (hasPositive) {
+                    this.updateEmotionStatus('긍정', 'positive');
+                } else if (hasNegative) {
+                    this.updateEmotionStatus('주의', 'warning');
+                } else {
+                    this.updateEmotionStatus('안정', 'stable');
+                }
+            }
+
+            updateEmotionStatus(emotion, level) {
+                const indicator = document.getElementById('emotionIndicator');
+                const status = document.getElementById('emotionStatus');
+                
+                indicator.className = 'emotion-indicator';
+                if (level === 'warning') indicator.classList.add('warning');
+                if (level === 'danger') indicator.classList.add('danger');
+                
+                status.textContent = `정서 상태: ${emotion}`;
+            }
+
+            async generateAIResponse(userMessage) {
+                // 대화 맥락을 고려한 더 지능적인 응답 생성
+                const context = this.buildConversationContext(userMessage);
+                const response = this.selectContextualResponse(context, userMessage);
+                
+                // 응답 지연 시뮬레이션
+                await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+                
+                return response;
+            }
+
+            buildConversationContext(userMessage) {
+                return {
+                    userMessage: userMessage.toLowerCase(),
+                    profile: this.userProfile,
+                    history: this.conversationHistory.slice(-5), // 최근 5개 대화
+                    keywords: this.extractKeywords(userMessage)
+                };
+            }
+
+            extractKeywords(message) {
+                const keywords = [];
+                const lowerMessage = message.toLowerCase();
+                
+                // 가족 관련
+                if (lowerMessage.includes('아들') || lowerMessage.includes('며느리') || lowerMessage.includes('손자') || lowerMessage.includes('가족')) {
+                    keywords.push('family');
+                }
+                
+                // 과거 관련
+                if (lowerMessage.includes('예전') || lowerMessage.includes('옛날') || lowerMessage.includes('젊었을때') || lowerMessage.includes('기억')) {
+                    keywords.push('memory');
+                }
+                
+                // 건강 관련
+                if (lowerMessage.includes('아프') || lowerMessage.includes('병원') || lowerMessage.includes('약') || lowerMessage.includes('건강')) {
+                    keywords.push('health');
+                }
+                
+                // 일상 관련
+                if (lowerMessage.includes('오늘') || lowerMessage.includes('날씨') || lowerMessage.includes('밥') || lowerMessage.includes('잠')) {
+                    keywords.push('daily');
+                }
+                
+                // 취미 관련
+                if (lowerMessage.includes('음악') || lowerMessage.includes('산책') || lowerMessage.includes('텔레비전') || lowerMessage.includes('책')) {
+                    keywords.push('hobby');
+                }
+                
+                return keywords;
+            }
+
+            selectContextualResponse(context, userMessage) {
+                const responses = {
+                    family: [
+                        `${this.userProfile.family ? '가족분들' : '사랑하는 가족들'}과 함께 보낸 시간들이 소중하시겠어요. 어떤 추억이 가장 기억에 남으시나요?`,
+                        `가족 이야기를 들으니 마음이 따뜻해집니다. 가족분들도 ${this.userProfile.name}님을 많이 생각하고 계실 거예요.`,
+                        `${this.userProfile.family ? this.userProfile.family.split(',')[0] : '가족분'}은 어떻게 지내고 계시나요?`
+                    ],
+                    memory: [
+                        `${this.userProfile.hometown ? this.userProfile.hometown + '에서의 ' : ''}어린 시절 이야기가 궁금해요. 어떤 기억이 가장 생생하신가요?`,
+                        `${this.userProfile.job ? this.userProfile.job + ' 일을 하실 때' : '예전에'} 가장 보람찼던 순간은 언제였나요?`,
+                        `${this.userProfile.memories ? '말씀해주신 추억들을 들으니' : '과거 이야기를 들으니'} 정말 많은 경험을 쌓으셨네요.`
+                    ],
+                    health: [
+                        `건강이 가장 중요하죠. 요즘 몸 상태는 어떠신가요? 불편한 곳은 없으신지요?`,
+                        `규칙적인 생활과 가벼운 운동이 도움이 될 거예요. 산책은 자주 나가시나요?`,
+                        `약은 꼬박꼬박 챙겨 드시고 계신가요? 건강 관리가 참 중요해요.`
+                    ],
+                    daily: [
+                        `오늘 하루는 어떻게 보내셨나요? 특별한 일이 있으셨나요?`,
+                        `규칙적인 생활 리듬이 중요해요. 잠은 잘 주무셨나요?`,
+                        `${this.userProfile.hobbies ? this.userProfile.hobbies.split(',')[0] + '는 요즘도 하고 계신가요?' : '취미 생활은 어떠신가요?'}`
+                    ],
+                    hobby: [
+                        `${this.userProfile.hobbies ? this.userProfile.hobbies + ' 중에' : ''} 가장 좋아하시는 것은 무엇인가요?`,
+                        `새로운 취미를 시작해보시는 건 어떨까요? 간단한 것부터 천천히요.`,
+                        `취미 활동을 하시면 기분도 좋아지고 건강에도 도움이 될 거예요.`
+                    ],
+                    default: [
+                        `${this.userProfile.name}님의 말씀을 듣고 있어요. 더 자세히 이야기해주시겠어요?`,
+                        `그렇군요. ${this.userProfile.name}님은 어떻게 생각하세요?`,
+                        `흥미로운 이야기네요. 다른 생각도 있으신가요?`,
+                        `${this.userProfile.name}님과 대화하니 즐거워요. 오늘은 어떤 하루였는지 궁금해요.`,
+                        `천천히 말씀해주세요. 제가 잘 듣고 있어요.`
+                    ]
+                };
+
+                // 키워드에 따라 응답 카테고리 선택
+                let selectedCategory = 'default';
+                
+                for (const keyword of context.keywords) {
+                    if (responses[keyword]) {
+                        selectedCategory = keyword;
+                        break;
+                    }
+                }
+
+                // 특정 패턴에 대한 맞춤 응답
+                if (context.userMessage.includes('안녕') || context.userMessage.includes('반가')) {
+                    return `${this.userProfile.name}님, 안녕하세요! 오늘도 만나뵙게 되어 기뻐요. 기분은 어떠신가요?`;
+                }
+                
+                if (context.userMessage.includes('고마') || context.userMessage.includes('감사')) {
+                    return `${this.userProfile.name}님, 저야말로 고마워요. 이렇게 대화할 수 있어서 즐거워요.`;
+                }
+                
+                if (context.userMessage.includes('배고') || context.userMessage.includes('밥')) {
+                    return `맛있는 식사하세요! ${this.userProfile.hobbies && this.userProfile.hobbies.includes('요리') ? '직접 요리하시는 걸 좋아하신다고 하셨죠?' : '어떤 음식을 좋아하세요?'}`;
+                }
+                
+                if (context.userMessage.includes('잠') || context.userMessage.includes('피곤')) {
+                    return `충분한 휴식이 중요해요. 밤에는 잘 주무시나요? 낮잠도 적당히 주무시면 좋을 것 같아요.`;
+                }
+
+                // 이전 대화와의 연결성 고려
+                if (context.history.length > 0) {
+                    const lastAIMessage = context.history.filter(h => h.type === 'ai').pop();
+                    if (lastAIMessage && lastAIMessage.message.includes('어떻게')) {
+                        // 이전에 질문을 했다면 더 구체적인 후속 질문
+                        const followUps = [
+                            `더 자세히 말씀해주시면 좋겠어요. 어떤 기분이셨나요?`,
+                            `그런 경험을 하셨군요. 그때 어떤 생각이 드셨어요?`,
+                            `${this.userProfile.name}님의 이야기를 들으니 많은 것을 느끼게 돼요.`
+                        ];
+                        return followUps[Math.floor(Math.random() * followUps.length)];
+                    }
+                }
+
+                const categoryResponses = responses[selectedCategory];
+                return categoryResponses[Math.floor(Math.random() * categoryResponses.length)];
+            }
+
+            speakResponse(text) {
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'ko-KR';
+                    utterance.rate = 0.7; // 더 천천히
+                    utterance.pitch = 1.1; // 높은 톤
+                    utterance.volume = 0.9;
+                    
+                    // 한국어 음성 선택
+                    const voices = this.synthesis.getVoices();
+                    const koreanVoice = voices.find(voice => 
+                        voice.lang.includes('ko') || voice.name.includes('Korean')
+                    );
+                    if (koreanVoice) {
+                        utterance.voice = koreanVoice;
+                    }
+                    
+                    this.synthesis.speak(utterance);
+                }
+            }
+
+            showLoading(show) {
+                const loading = document.getElementById('loading');
+                loading.style.display = show ? 'block' : 'none';
+            }
+        }
+
+        // 페이지 로드 시 마음AI 초기화
+        window.addEventListener('load', () => {
+            const app = new MaeumAI();
+            
+            // 브라우저 음성 합성 준비
+            if ('speechSynthesis' in window) {
+                // 음성 목록이 로드될 때까지 기다리기
+                const loadVoices = () => {
+                    const voices = speechSynthesis.getVoices();
+                    if (voices.length === 0) {
+                        setTimeout(loadVoices, 100);
+                    }
+                };
+                loadVoices();
+                
+                // 일부 브라우저에서는 이벤트로 음성 목록 로드 완료를 알려줌
+                if (speechSynthesis.onvoiceschanged !== undefined) {
+                    speechSynthesis.onvoiceschanged = loadVoices;
+                }
+            }
+        });
+
+        // 페이지를 떠날 때 음성 정지
+        window.addEventListener('beforeunload', () => {
+            if ('speechSynthesis' in window) {
+                speechSynthesis.cancel();
+            }
+        });
+    </script>
+</body>
+</html>
